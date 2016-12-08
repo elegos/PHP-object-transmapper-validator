@@ -1,5 +1,5 @@
 {
-    "name": "giacomofurlan/object-transcoder-validator",
+    "name": "giacomofurlan/object-trans-mapper-validator",
     "description": "Map stdClass objects into particular classes and perform validation",
     "type": "library",
     "keywords": ["validation", "map", "conversion", "transcode"],

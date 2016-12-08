@@ -28,7 +28,7 @@ class Validate
      */
     private $typeExceptionMessage;
 
-    /** @var string */
+    /** @var int */
     private $typeExceptionCode;
 
     /** @var string */
@@ -39,7 +39,7 @@ class Validate
      */
     private $mandatoryExceptionMessage;
 
-    /** @var string */
+    /** @var int */
     private $mandatoryExceptionCode;
 
     /**

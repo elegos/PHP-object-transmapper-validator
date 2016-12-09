@@ -67,7 +67,7 @@ class Validate
         }
 
         if (null === $this->mandatory) {
-            $this->mandatory = false;
+            $this->mandatory = true;
         }
 
         if (null === $this->nullable) {

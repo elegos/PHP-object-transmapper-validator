@@ -42,7 +42,8 @@ The only mandatory option is `type`, which can be any of the scalar values and t
 The options are:
 
 - `type` string
-- `mandatory` boolean
+- `mandatory` boolean (default true), the source object must contain the attribute
+- `nullable` boolean (default false), the source may contain the attribute, even if it can be null regardless of the specified type
 - `typeExceptionClass` string, the fully-qualified class name of the exception to throw in case of type mismatch
 - `typeExceptionMessage` string, the message thrown for the previous exception, must instert two `%s`: (1) found type, (2) expected type
 - `typeExceptionCode` int, the type mismatch exception's code (default 3000)

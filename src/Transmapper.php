@@ -76,12 +76,15 @@ class Transmapper
             if (null !== $annotation) {
                 $expectedType = $annotation->getType();
                 $exceptionClass = $annotation->getTypeExceptionClass();
+                $isNullable = $annotation->isNullable();
 
                 if (
-                    (($expectedType === 'boolean' || $expectedType === 'bool') && !is_bool($value))
-                    || (($expectedType === 'integer' || $expectedType === 'int') && !is_int($value))
-                    || (($expectedType === 'float' || $expectedType === 'double') && !is_float($value))
-                    || ($expectedType === 'string' && !is_string($value))
+                    (
+                        (($expectedType === 'boolean' || $expectedType === 'bool') && !is_bool($value))
+                        || (($expectedType === 'integer' || $expectedType === 'int') && !is_int($value))
+                        || (($expectedType === 'float' || $expectedType === 'double') && !is_float($value))
+                        || ($expectedType === 'string' && !is_string($value))
+                    ) && (null !== $value || !$isNullable)
                 ) {
                     throw new $exceptionClass(
                         sprintf($annotation->getTypeExceptionMessage(), gettype($value), $expectedType),
@@ -93,6 +96,8 @@ class Transmapper
                 if (in_array($expectedType, ['boolean', 'bool', 'integer', 'int', 'float', 'double', 'string'], true)) {
                     // Scalar value
                     $property->setValue($mappedObject, $value);
+                } elseif (null === $value && $isNullable) {
+                    $property->setValue($mappedObject, null);
                 } elseif (in_array($expectedType, ['boolean[]', 'bool[]', 'integer[]', 'int[]', 'float[]', 'double[]', 'string[]'], true)) {
                     // Array of scalar values
 

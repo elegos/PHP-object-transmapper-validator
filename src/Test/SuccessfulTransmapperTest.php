@@ -5,7 +5,9 @@ namespace GiacomoFurlan\ObjectTransmapperValidator\Test;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
+use GiacomoFurlan\ObjectTransmapperValidator\Exception\ValidationException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithNullableAttribute;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassInside;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithUnmappedAttributes;
@@ -107,6 +109,25 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         ];
 
         $transmapper->map($object, ClassWithSimpleScalarClassArray::class);
+    }
+
+    public function testNullableTypeMap()
+    {
+        $object = (object) [
+            'nullableInt' => null,
+        ];
+        /** @var ClassWithNullableAttribute $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
+        $this->assertEquals(null, $mapped->getNullableInt());
+
+        $object->nullableInt = 23;
+        /** @var ClassWithNullableAttribute $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
+        $this->assertEquals(23, $mapped->getNullableInt());
+
+        $object->nullableInt = 'string';
+        $this->expectException(ValidationException::class);
+        $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
     }
 
     /**

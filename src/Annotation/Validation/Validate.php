@@ -20,6 +20,9 @@ class Validate
     /** @var bool */
     private $mandatory;
 
+    /** @var bool */
+    private $nullable;
+
     /** @var string */
     private $typeExceptionClass;
 
@@ -67,6 +70,10 @@ class Validate
             $this->mandatory = false;
         }
 
+        if (null === $this->nullable) {
+            $this->nullable = false;
+        }
+
         if (null === $this->typeExceptionClass) {
             $this->typeExceptionClass = ValidationException::class;
         }
@@ -106,6 +113,14 @@ class Validate
     public function isMandatory() : bool
     {
         return $this->mandatory ?: false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNullable()
+    {
+        return $this->nullable;
     }
 
     /**

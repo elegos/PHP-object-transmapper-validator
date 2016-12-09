@@ -13,6 +13,10 @@
             "role": "developer"
         }
     ],
+    "repositories": {
+        "type": "vcs",
+        "url": "https://github.com/elegos/PHP-object-transmapper-validator.git"
+    },
     "autoload": {
         "psr-4": {"GiacomoFurlan\\ObjectTransmapperValidator\\": "src/"}
     },

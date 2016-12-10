@@ -6,6 +6,8 @@ use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Exception\ValidationException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithNullableAttribute;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithRegex;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\MissingMandatoryAttributeException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\WrongTypeAttributeException;
@@ -61,6 +63,27 @@ class ExceptionTransmapperTest extends PHPUnit_Framework_TestCase
 
         $this->expectException(ValidationException::class);
         $this->getTransmapper()->map($object, ClassWithIntArray::class);
+    }
+
+    public function testNullableAttributeWithWrongTypeMap()
+    {
+        $object = (object) [
+            'nullableInt' => 'string',
+        ];
+
+        $this->expectException(ValidationException::class);
+        $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
+    }
+
+    public function testWrongRegexMap()
+    {
+        $object = (object) [
+            'string' => "this won't match the regex",
+            'int' => 23
+        ];
+
+        $this->expectException(ValidationException::class);
+        $this->getTransmapper()->map($object, ClassWithRegex::class);
     }
 
     /**

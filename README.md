@@ -44,9 +44,13 @@ The options are:
 - `type` string
 - `mandatory` boolean (default true), the source object must contain the attribute
 - `nullable` boolean (default false), the source may contain the attribute, even if it can be null regardless of the specified type
+- `regex` string (default null), the regex to check against the value to map. Performed only if `type="string"`
 - `typeExceptionClass` string, the fully-qualified class name of the exception to throw in case of type mismatch
 - `typeExceptionMessage` string, the message thrown for the previous exception, must instert two `%s`: (1) found type, (2) expected type
 - `typeExceptionCode` int, the type mismatch exception's code (default 3000)
 - `mandatoryExceptionClass` string, the fully-qualified class name of the exception to throw in case of missing mandatory attribute
 - `mandatoryExceptionMessage` string, the message thrown for the previous exception, must instert one `%s` for the missing attribute's name
 - `mandatoryExceptionCode` int, the mandatory exception's code (default 3001)
+- `regexExceptionClass` string, the fully-qualified class name of the exception to throw in case of regex mismatch
+- `regexExceptionMessage` string, the message thrown for the previous exception, must instert two `%s`: (1) the value, (2) the regex
+- `regexExceptionCode` int, the regex exception's code (default 3002)

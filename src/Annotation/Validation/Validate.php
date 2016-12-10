@@ -23,6 +23,9 @@ class Validate
     /** @var bool */
     private $nullable;
 
+    /** @var string|null */
+    private $regex;
+
     /** @var string */
     private $typeExceptionClass;
 
@@ -44,6 +47,17 @@ class Validate
 
     /** @var int */
     private $mandatoryExceptionCode;
+
+    /** @var string */
+    private $regexExceptionClass;
+
+    /**
+     * @var string requires one %s: attribute's name
+     */
+    private $regexExceptionMessage;
+
+    /** @var int */
+    private $regexExceptionCode;
 
     /**
      * Validate constructor.
@@ -97,6 +111,18 @@ class Validate
         if (null === $this->mandatoryExceptionCode) {
             $this->mandatoryExceptionCode = 3001;
         }
+
+        if (null === $this->regexExceptionClass) {
+            $this->regexExceptionClass = ValidationException::class;
+        }
+
+        if (null === $this->regexExceptionMessage) {
+            $this->regexExceptionMessage = 'Regex constraint fail ("%s" doesn\'t match "%s")';
+        }
+
+        if (null === $this->regexExceptionCode) {
+            $this->regexExceptionCode = 3002;
+        }
     }
 
     /**
@@ -121,6 +147,14 @@ class Validate
     public function isNullable()
     {
         return $this->nullable;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getRegex(): ?string
+    {
+        return $this->regex;
     }
 
     /**
@@ -169,5 +203,29 @@ class Validate
     public function getMandatoryExceptionCode(): string
     {
         return $this->mandatoryExceptionCode;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRegexExceptionClass(): string
+    {
+        return $this->regexExceptionClass;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRegexExceptionMessage(): string
+    {
+        return $this->regexExceptionMessage;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRegexExceptionCode(): int
+    {
+        return $this->regexExceptionCode;
     }
 }

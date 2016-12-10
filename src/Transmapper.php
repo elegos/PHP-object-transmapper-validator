@@ -74,6 +74,9 @@ class Transmapper
             // Type check
             $this->checkTypeConstraint($annotation, $value);
 
+            // Regex check
+            $this->checkRegexConstraint($annotation, $value);
+
             $expectedType = $annotation->getType();
             $this->mapAttribute(
                 $reflectionObject,
@@ -169,6 +172,31 @@ class Transmapper
             // Array
 
             throw $exception;
+        }
+    }
+
+    /**
+     * @param Validate $annotation
+     * @param          $value
+     *
+     * @throws Exception
+     */
+    private function checkRegexConstraint(Validate $annotation, $value)
+    {
+        $regex = $annotation->getRegex();
+
+        // Not a string, or regex not set
+        if (!is_string($value) || null === $regex) {
+            return;
+        }
+
+        if (!preg_match($regex, $value)) {
+            $exceptionClass = $annotation->getRegexExceptionClass();
+
+            throw new $exceptionClass(
+                sprintf($annotation->getRegexExceptionMessage(), $value, $regex),
+                $annotation->getRegexExceptionCode()
+            );
         }
     }
 

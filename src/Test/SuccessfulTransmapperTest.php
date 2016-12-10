@@ -8,10 +8,12 @@ use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
 use GiacomoFurlan\ObjectTransmapperValidator\Exception\ValidationException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithNullableAttribute;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithRegex;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassInside;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithUnmappedAttributes;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\MissingMandatoryAttributeException;
 use GiacomoFurlan\ObjectTransmapperValidator\Transmapper;
 use PHPUnit_Framework_TestCase;
 use stdClass;
@@ -124,10 +126,19 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var ClassWithNullableAttribute $mapped */
         $mapped = $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
         $this->assertEquals(23, $mapped->getNullableInt());
+    }
 
-        $object->nullableInt = 'string';
-        $this->expectException(ValidationException::class);
-        $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
+    public function testRegexConstraintMap()
+    {
+        $object = (object) [
+            'string' => 'fiveC',
+            'int' => 23
+        ];
+
+        /** @var ClassWithRegex $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithRegex::class);
+        $this->assertEquals('fiveC', $mapped->getString());
+        $this->assertEquals(23, $mapped->getInt());
     }
 
     /**

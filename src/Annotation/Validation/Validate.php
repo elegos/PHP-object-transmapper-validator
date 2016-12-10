@@ -228,4 +228,19 @@ class Validate
     {
         return $this->regexExceptionCode;
     }
+
+    /**
+     * Overridable attributes: mandatory, nullable, regex
+     *
+     * @param $attribute
+     * @param $value
+     */
+    public function __set($attribute, $value)
+    {
+        $overridable = ['mandatory', 'nullable', 'regex'];
+
+        if (in_array($attribute, $overridable, true)) {
+            $this->$attribute = $value;
+        }
+    }
 }

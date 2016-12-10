@@ -31,13 +31,24 @@ class Transmapper
     /**
      * @param stdClass $object
      * @param string   $className
-     * @param string   $attributePrefix used for recursive calls
+     * @param array    $overrides ['dot.notation.attribute' => ['regex' => '', ...]]
      *
      * @return mixed (object of class $className)
-     * @throws TransmappingException
-     * @throws Exception
      */
-    public function map(stdClass $object, string $className, string $attributePrefix = '')
+    public function map(stdClass $object, string $className, ...$overrides)
+    {
+        return $this->internalMap($object, $className, '', $overrides);
+    }
+
+    /**
+     * @param stdClass $object
+     * @param string   $className
+     * @param string   $attributePrefix used for recursive calls
+     * @param array    $overrides ['dot.notation.attribute' => ['regex' => '', ...]]
+     *
+     * @return mixed (object of class $className)
+     */
+    private function internalMap(stdClass $object, string $className, string $attributePrefix = '', ...$overrides)
     {
         if (strpos($attributePrefix, '.') === 0) {
             $attributePrefix = substr($attributePrefix, 1);
@@ -53,6 +64,8 @@ class Transmapper
             /** @var Validate|null $annotation */
             $annotation = $this->reader->getPropertyAnnotation($property, Validate::class);
             $propertyName = $property->getName();
+
+            $this->overrideAnnotationAttributes($annotation, $attributePrefix, $propertyName, $overrides);
 
             // Mandatory check
             $this->checkMandatoryConstraint($annotation, $object, $propertyName, $attributePrefix);
@@ -90,6 +103,42 @@ class Transmapper
         }
 
         return $mappedObject;
+    }
+
+    /**
+     * @param Validate|null $annotation
+     * @param string        $attributePrefix
+     * @param string        $propertyName
+     * @param array         $overrides
+     */
+    private function overrideAnnotationAttributes(
+        Validate $annotation = null,
+        string $attributePrefix,
+        string $propertyName,
+        array $overrides
+    ) {
+        if ($annotation === null) {
+            return;
+        }
+
+        $dotNotation = '' === $attributePrefix ? $propertyName : $attributePrefix.'.'.$propertyName;
+
+        $availableOverrides = [];
+        foreach ($overrides as $index => $override) {
+            if (0 === count($override)) {
+                continue;
+            }
+
+            if (array_key_exists($dotNotation, $override[0])) {
+                $availableOverrides[$dotNotation] = $override[0][$dotNotation];
+            }
+        }
+
+        if (array_key_exists($dotNotation, $availableOverrides)) {
+            foreach ($availableOverrides[$dotNotation] as $override => $value) {
+                $annotation->$override = $value;
+            }
+        }
     }
 
     /**
@@ -245,7 +294,7 @@ class Transmapper
                 $property->setValue($mappedObject, $value);
             } else {
                 // Object
-                $property->setValue($mappedObject, $this->map($value, $expectedType, $attributePrefix . '.' . $propertyName));
+                $property->setValue($mappedObject, $this->internalMap($value, $expectedType, $attributePrefix . '.' . $propertyName));
             }
         }
     }
@@ -300,7 +349,7 @@ class Transmapper
         foreach ($value as $item) {
             $this->checkTypeConstraint($annotation, $item, $expectedType, false);
 
-            $values[] = $this->map($item, $expectedType, $attributePrefix.'.'.$expectedType.'[]');
+            $values[] = $this->internalMap($item, $expectedType, $attributePrefix.'.'.$expectedType.'[]');
         }
 
         return $values;

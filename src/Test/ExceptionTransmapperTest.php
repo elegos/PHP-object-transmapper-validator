@@ -86,6 +86,27 @@ class ExceptionTransmapperTest extends PHPUnit_Framework_TestCase
         $this->getTransmapper()->map($object, ClassWithRegex::class);
     }
 
+    public function testAnnotationOverrideMap()
+    {
+        $object = (object)[
+            "integer" => 1,
+            "float" => 1.2,
+            "string" => 'whatever'
+        ];
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionCode(3002);
+
+        $this->getTransmapper()->map(
+            $object,
+            SimpleScalarClass::class,
+            [
+                'boolean' => ['mandatory' => false],
+                'string' => ['regex' => '/^specific text$/']
+            ]
+        );
+    }
+
     /**
      * @return Transmapper
      */

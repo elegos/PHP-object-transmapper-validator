@@ -8,7 +8,7 @@ and eventually push the data into a model, this library is able to parse the req
 given class, as easy as the following:
 
     $requestData = json_decode($payload); // whatever
-    $data = $this->transmapper->map($requestData, MyModel::class);
+    $data = $this->transmapper->map($requestData, MyModel::class[, ...$override]);
 
 It supports all the scalar values (`bool`, `int`, `float`, `string`), classes and arrays (both of scalar values or classes)
 recursively.
@@ -37,7 +37,22 @@ in order to describe the validation
         
 The only mandatory option is `type`, which can be any of the scalar values and their aliases (`bool`, `boolean`, `int`,
 `integer`, `float`, `double`, `string`), an array of scalar values (es. `int[]` or `integer[]`), a class name
-(fully qualified name, i.e. `My\Full\Namespace\ClassName`) or an array of objects (always fully qualified name, i.e. `My\Full\Namespace\ClassName[]`).
+(fully qualified name, i.e. `My\Full\Namespace\ClassName`) or an array of objects (always fully qualified name,
+i.e. `My\Full\Namespace\ClassName[]`).
+
+To trans-map the standard object to the given model, call the transmapper's map method:
+
+    $myTransmapper->map($stdClass, MyModel::class[, $override1, $override2...])
+
+Overrides allow you to dynamically change some aspects of the validation in order to make the system dynamic depending
+on the environment variables, in particular: `mandatory`, `nullable` and `regex`. These overrides will follow the specs
+of the options written below. The format is the following: `['dot.notation.variable' => ['mandatory' => true, 'nullable' => true]]`
+
+Override examples:
+
+- `['myString' => ['regex' => '/^must_start_with_string/']]`
+- `['myInt' => ['mandatory' => false]]`
+- `['mySubModel.myVar' => [...]]`
 
 The options are:
 

@@ -5,7 +5,6 @@ namespace GiacomoFurlan\ObjectTransmapperValidator\Test;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
-use GiacomoFurlan\ObjectTransmapperValidator\Exception\ValidationException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithNullableAttribute;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithRegex;
@@ -13,7 +12,6 @@ use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScala
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassInside;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithUnmappedAttributes;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass;
-use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\MissingMandatoryAttributeException;
 use GiacomoFurlan\ObjectTransmapperValidator\Transmapper;
 use PHPUnit_Framework_TestCase;
 use stdClass;

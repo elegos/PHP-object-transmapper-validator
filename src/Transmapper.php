@@ -6,7 +6,9 @@ use Doctrine\Common\Annotations\Reader;
 use Exception;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
 use GiacomoFurlan\ObjectTransmapperValidator\Exception\TransmappingException;
+use GiacomoFurlan\ObjectTransmapperValidator\Model\MappedModel;
 use ReflectionObject;
+use ReflectionProperty;
 use stdClass;
 
 /**
@@ -275,28 +277,48 @@ class Transmapper
         if ($this->isArray($expectedType)) {
             if ($this->isScalarArray($expectedType)) {
                 // Scalar array
-                $property->setValue(
+                $this->setValue(
+                    $property,
+                    $propertyName,
                     $mappedObject,
-                    $this->mapScalarArrayAttribute($annotation, $expectedType, $value)
+                    $this->mappedScalarArrayAttribute($annotation, $expectedType, $value)
                 );
 
                 return;
             } else {
                 // Object array
-                $property->setValue(
+                $this->setValue(
+                    $property,
+                    $propertyName,
                     $mappedObject,
-                    $this->mapObjectArrayAttribute($annotation, $expectedType, $value, $attributePrefix)
+                    $this->mappedObjectArrayAttribute($annotation, $expectedType, $value, $attributePrefix)
                 );
             }
         } else {
             // Simple scalar value
             if ($this->isScalar($expectedType)) {
-                $property->setValue($mappedObject, $value);
+                $this->setValue($property, $propertyName, $mappedObject, $value);
             } else {
                 // Object
-                $property->setValue($mappedObject, $this->internalMap($value, $expectedType, $attributePrefix . '.' . $propertyName));
+                $this->setValue(
+                    $property,
+                    $propertyName,
+                    $mappedObject,
+                    $this->internalMap($value, $expectedType, $attributePrefix . '.' . $propertyName)
+                );
             }
         }
+    }
+
+    private function setValue(ReflectionProperty $property, string $propertyName, $mappedObject, $value)
+    {
+        if ($mappedObject instanceof MappedModel) {
+            if (!$mappedObject->setMapped($propertyName)) {
+                return;
+            }
+        }
+
+        $property->setValue($mappedObject, $value);
     }
 
     /**
@@ -307,7 +329,7 @@ class Transmapper
      * @return array
      * @throws Exception
      */
-    private function mapScalarArrayAttribute(
+    private function mappedScalarArrayAttribute(
         Validate $annotation,
         string $expectedType,
         array $value
@@ -335,7 +357,7 @@ class Transmapper
      * @return array
      * @throws Exception
      */
-    private function mapObjectArrayAttribute(
+    private function mappedObjectArrayAttribute(
         Validate $annotation,
         string $expectedType,
         array $value,

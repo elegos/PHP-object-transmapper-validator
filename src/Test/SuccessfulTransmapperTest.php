@@ -5,7 +5,9 @@ namespace GiacomoFurlan\ObjectTransmapperValidator\Test;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithInnerMappedModel;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithMappedModel;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithNullableAttribute;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithRegex;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScalarClassArray;
@@ -137,6 +139,35 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         $mapped = $this->getTransmapper()->map($object, ClassWithRegex::class);
         $this->assertEquals('fiveC', $mapped->getString());
         $this->assertEquals(23, $mapped->getInt());
+    }
+
+    public function testMappedModel()
+    {
+        $object = (object) [
+            'mapped' => 'whatever'
+        ];
+
+        /** @var ClassWithMappedModel $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithMappedModel::class);
+
+        $this->assertEquals('whatever', $mapped->getMapped());
+        $this->assertNull($mapped->getNotMapped());
+        $this->assertTrue($mapped->isMapped('mapped'));
+        $this->assertFalse($mapped->isMapped('notMapped'));
+
+        $outer = (object) [
+            'inner' => $object,
+            '_mapped' => 'this will be ignored'
+        ];
+
+        /** @var ClassWithInnerMappedModel $mapped */
+        $mapped = $this->getTransmapper()->map($outer, ClassWithInnerMappedModel::class);
+        $inner = $mapped->getInner();
+
+        $this->assertEquals('whatever', $inner->getMapped());
+        $this->assertNull($inner->getNotMapped());
+        $this->assertTrue($inner->isMapped('mapped'));
+        $this->assertFalse($inner->isMapped('notMapped'));
     }
 
     /**

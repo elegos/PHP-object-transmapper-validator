@@ -40,6 +40,10 @@ The only mandatory option is `type`, which can be any of the scalar values and t
 (fully qualified name, i.e. `My\Full\Namespace\ClassName`) or an array of objects (always fully qualified name,
 i.e. `My\Full\Namespace\ClassName[]`).
 
+You can optionally extend the model with `GiacomoFurlan\ObjectTransmapperValidator\Model\MappedModel`, which provides
+the method `isMapped(string $attribute) : bool`. Note that extending this model will forbid the use of `_mapped` as
+attribute name in your model (the attribute's value will be ignored).
+
 To trans-map the standard object to the given model, call the transmapper's map method:
 
     $myTransmapper->map($stdClass, MyModel::class[, $override1, $override2...])

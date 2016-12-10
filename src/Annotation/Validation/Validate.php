@@ -100,11 +100,11 @@ class Validate
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getType() : ?string
+    public function getType() : string
     {
-        return $this->type ?: null;
+        return $this->type;
     }
 
     /**
@@ -112,7 +112,7 @@ class Validate
      */
     public function isMandatory() : bool
     {
-        return $this->mandatory ?: false;
+        return $this->mandatory;
     }
 
     /**

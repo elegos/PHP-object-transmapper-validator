@@ -2,13 +2,11 @@
 
 namespace GiacomoFurlan\ObjectTransmapperValidator;
 
-use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Reader;
 use Exception;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
 use GiacomoFurlan\ObjectTransmapperValidator\Exception\TransmappingException;
 use ReflectionObject;
-use ReflectionProperty;
 use stdClass;
 
 /**
@@ -57,16 +55,7 @@ class Transmapper
             $propertyName = $property->getName();
 
             // Mandatory check
-            if (!$this->checkMandatoryConstraint($annotation, $object, $propertyName)) {
-                $mandatoryExceptionClass = $annotation->getMandatoryExceptionClass();
-
-                $missingField = '' !== $attributePrefix ? $attributePrefix.'.'.$propertyName : $propertyName;
-
-                throw new $mandatoryExceptionClass(
-                    sprintf($annotation->getMandatoryExceptionMessage(), $missingField),
-                    $annotation->getMandatoryExceptionCode()
-                );
-            }
+            $this->checkMandatoryConstraint($annotation, $object, $propertyName, $attributePrefix);
 
             if (!array_key_exists($propertyName, get_object_vars($object))) {
                 continue;
@@ -75,39 +64,26 @@ class Transmapper
             $value = $object->$propertyName;
             $property->setAccessible(true);
 
-            // Check the type
-            if (null !== $annotation) {
-                $expectedType = $annotation->getType();
-                $typeExceptionClass = $annotation->getTypeExceptionClass();
-                $typeExceptionMessage = $annotation->getTypeExceptionMessage();
-                $typeExceptionCode = $annotation->getTypeExceptionCode();
-
-                $isNullable = $annotation->isNullable();
-
-                if (!$this->checkType($expectedType, $isNullable, $value)) {
-                    $foundType = is_object($value) ? get_class($value) : gettype($value);
-
-                    throw new $typeExceptionClass(
-                        sprintf($typeExceptionMessage, $foundType, $expectedType),
-                        $typeExceptionCode
-                    );
-                }
-
-                $this->mapAttribute(
-                    $reflectionObject,
-                    $propertyName,
-                    $expectedType,
-                    $attributePrefix,
-                    $typeExceptionClass,
-                    $typeExceptionMessage,
-                    $typeExceptionCode,
-                    $mappedObject,
-                    $value
-                );
-            } else {
+            if (null === $annotation) {
                 // Blind mapping
                 $property->setValue($mappedObject, $value);
+
+                continue;
             }
+
+            // Type check
+            $this->checkTypeConstraint($annotation, $value);
+
+            $expectedType = $annotation->getType();
+            $this->mapAttribute(
+                $reflectionObject,
+                $annotation,
+                $propertyName,
+                $expectedType,
+                $attributePrefix,
+                $mappedObject,
+                $value
+            );
         }
 
         return $mappedObject;
@@ -117,37 +93,57 @@ class Transmapper
      * @param Validate|null $annotation
      * @param stdClass      $object
      * @param string        $propertyName
+     * @param string        $attributePrefix
      *
-     * @return bool
+     * @throws Exception
      */
-    private function checkMandatoryConstraint(Validate $annotation = null, stdClass $object, string $propertyName) : bool
-    {
-        if (null === $annotation) {
-            return true;
-        }
+    private function checkMandatoryConstraint(
+        Validate $annotation = null,
+        stdClass $object,
+        string $propertyName,
+        string $attributePrefix
+    ) {
+        if (
+            null !== $annotation
+            && !array_key_exists($propertyName, get_object_vars($object))
+            && $annotation->isMandatory()
+        ) {
+            $mandatoryExceptionClass = $annotation->getMandatoryExceptionClass();
 
-        if (!array_key_exists($propertyName, get_object_vars($object)) && $annotation->isMandatory()) {
-            return false;
-        }
+            $missingField = '' !== $attributePrefix ? $attributePrefix.'.'.$propertyName : $propertyName;
 
-        return true;
+            throw new $mandatoryExceptionClass(
+                sprintf($annotation->getMandatoryExceptionMessage(), $missingField),
+                $annotation->getMandatoryExceptionCode()
+            );
+        }
     }
 
     /**
-     * @param string $expectedType
-     * @param bool   $nullable
-     * @param mixed  $value
-     *
-     * @return bool
+     * @param Validate    $annotation
+     * @param mixed       $value
+     * @param string|null $forcedExpectedType
+     * @param bool|null   $forceNullable
      */
-    private function checkType(string $expectedType, bool $nullable, $value)
+    private function checkTypeConstraint(Validate $annotation, $value, $forcedExpectedType = null, $forceNullable = null)
     {
-        if (null === $value) {
-            if ($nullable) {
-                return true;
-            }
+        $expectedType = null !== $forcedExpectedType ? $forcedExpectedType : $annotation->getType();
+        $nullable = null !== $forceNullable ? $forceNullable : $annotation->isNullable();
+        $typeExceptionClass = $annotation->getTypeExceptionClass();
 
-            return false;
+        $foundType = is_object($value) ? get_class($value) : gettype($value);
+
+        $exception = new $typeExceptionClass(
+            sprintf($annotation->getTypeExceptionMessage(), $foundType, $expectedType),
+            $annotation->getTypeExceptionCode()
+        );
+
+        if (null === $value) {
+            if (!$nullable) {
+                throw $exception;
+            } else {
+                return;
+            }
         }
 
         $isArray = $this->isArray($expectedType);
@@ -162,29 +158,26 @@ class Transmapper
                 || (in_array($expectedType, ['int', 'integer'], true) && !is_int($value))
             ) {
                 // Not a scalar value as expected
-                return false;
+
+                throw $exception;
             } elseif (!is_object($value) && class_exists($expectedType)) {
                 // Not an object as expected
 
-                return false;
+                throw $exception;
             }
         } elseif (!is_array($value)) {
             // Array
 
-            return false;
+            throw $exception;
         }
-
-        return true;
     }
 
     /**
      * @param ReflectionObject $reflectionObject
+     * @param Validate         $annotation
      * @param string           $propertyName
      * @param string           $expectedType
      * @param string           $attributePrefix
-     * @param string           $typeExceptionClass
-     * @param string           $typeExceptionMessage
-     * @param int              $typeExceptionCode
      * @param mixed            $mappedObject
      * @param mixed            $value
      *
@@ -192,12 +185,10 @@ class Transmapper
      */
     private function mapAttribute(
         ReflectionObject $reflectionObject,
+        Validate $annotation,
         string $propertyName,
         string $expectedType,
         string $attributePrefix,
-        string $typeExceptionClass,
-        string $typeExceptionMessage,
-        int $typeExceptionCode,
         $mappedObject,
         $value
     ) {
@@ -209,13 +200,7 @@ class Transmapper
                 // Scalar array
                 $property->setValue(
                     $mappedObject,
-                    $this->mapScalarArrayAttribute(
-                        $expectedType,
-                        $value,
-                        $typeExceptionClass,
-                        $typeExceptionMessage,
-                        $typeExceptionCode
-                    )
+                    $this->mapScalarArrayAttribute($annotation, $expectedType, $value)
                 );
 
                 return;
@@ -223,14 +208,7 @@ class Transmapper
                 // Object array
                 $property->setValue(
                     $mappedObject,
-                    $this->mapObjectArrayAttribute(
-                        $expectedType,
-                        $value,
-                        $typeExceptionClass,
-                        $typeExceptionMessage,
-                        $typeExceptionCode,
-                        $attributePrefix
-                    )
+                    $this->mapObjectArrayAttribute($annotation, $expectedType, $value, $attributePrefix)
                 );
             }
         } else {
@@ -245,23 +223,17 @@ class Transmapper
     }
 
     /**
-     * @param string $expectedType
-     *
-     * @param array  $value
-     *
-     * @param string $typeExceptionClass
-     * @param string $typeExceptionMessage
-     * @param int    $typeExceptionCode
+     * @param Validate $annotation
+     * @param string   $expectedType
+     * @param array    $value
      *
      * @return array
      * @throws Exception
      */
     private function mapScalarArrayAttribute(
+        Validate $annotation,
         string $expectedType,
-        array $value,
-        string $typeExceptionClass,
-        string $typeExceptionMessage,
-        int $typeExceptionCode
+        array $value
     ) : array
     {
         $expectedType = preg_replace('/\[\]$/', '', $expectedType);
@@ -269,12 +241,7 @@ class Transmapper
         $values = [];
 
         foreach ($value as $item) {
-            if (!$this->checkType($expectedType, false, $item)) {
-                throw new $typeExceptionClass(
-                    sprintf($typeExceptionMessage, gettype($item), $expectedType),
-                    $typeExceptionCode
-                );
-            }
+            $this->checkTypeConstraint($annotation, $item, $expectedType, false);
 
             $values[] = $item;
         }
@@ -283,22 +250,18 @@ class Transmapper
     }
 
     /**
-     * @param string $expectedType
-     * @param array  $value
-     *
-     * @param string $typeExceptionClass
-     * @param string $typeExceptionMessage
-     * @param int    $typeExceptionCode
-     * @param string $attributePrefix
+     * @param Validate $annotation
+     * @param string   $expectedType
+     * @param array    $value
+     * @param string   $attributePrefix
      *
      * @return array
+     * @throws Exception
      */
     private function mapObjectArrayAttribute(
+        Validate $annotation,
         string $expectedType,
         array $value,
-        string $typeExceptionClass,
-        string $typeExceptionMessage,
-        int $typeExceptionCode,
         string $attributePrefix
     ) : array
     {
@@ -307,12 +270,7 @@ class Transmapper
         $values = [];
 
         foreach ($value as $item) {
-            if (!$this->checkType($expectedType, false, $item)) {
-                throw new $typeExceptionClass(
-                    sprintf($typeExceptionMessage, gettype($item), $expectedType),
-                    $typeExceptionCode
-                );
-            }
+            $this->checkTypeConstraint($annotation, $item, $expectedType, false);
 
             $values[] = $this->map($item, $expectedType, $attributePrefix.'.'.$expectedType.'[]');
         }

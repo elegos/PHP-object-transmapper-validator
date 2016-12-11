@@ -32,6 +32,10 @@ class MappedModel
      */
     public function isMapped(string $attribute) : bool
     {
+        if (!is_array($this->_mapped)) {
+            return false;
+        }
+
         return array_key_exists($attribute, $this->_mapped);
     }
 }

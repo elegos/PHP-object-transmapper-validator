@@ -47,12 +47,12 @@ class Transmapper
      * @param stdClass $object
      * @param string   $className
      * @param string   $attributePrefix used for recursive calls
-     * @param array    $overrides       ['dot.notation.attribute' => ['regex' => '', ...]]
+     * @param array    $overrides       [['dot.notation.attribute' => ['regex' => '', ...]], ...]
      *
      * @return mixed (object of class $className)
      * @throws Exception
      */
-    private function internalMap(stdClass $object, string $className, string $attributePrefix = '', ...$overrides)
+    private function internalMap(stdClass $object, string $className, string $attributePrefix = '', $overrides)
     {
         if (strpos($attributePrefix, '.') === 0) {
             $attributePrefix = substr($attributePrefix, 1);
@@ -129,13 +129,13 @@ class Transmapper
         $dotNotation = '' === $attributePrefix ? $propertyName : $attributePrefix.'.'.$propertyName;
 
         $availableOverrides = [];
-        foreach ($overrides as $index => $override) {
+        foreach ($overrides as $override) {
             if (0 === count($override)) {
                 continue;
             }
 
-            if (array_key_exists($dotNotation, $override[0])) {
-                $availableOverrides[$dotNotation] = $override[0][$dotNotation];
+            if (array_key_exists($dotNotation, $override)) {
+                $availableOverrides[$dotNotation] = $override[$dotNotation];
             }
         }
 

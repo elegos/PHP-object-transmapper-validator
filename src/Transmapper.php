@@ -5,7 +5,7 @@ namespace GiacomoFurlan\ObjectTransmapperValidator;
 use Doctrine\Common\Annotations\Reader;
 use Exception;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
-use GiacomoFurlan\ObjectTransmapperValidator\Exception\TransmappingException;
+use GiacomoFurlan\ObjectTransmapperValidator\Dto\PropertyInfo;
 use GiacomoFurlan\ObjectTransmapperValidator\Model\MappedModel;
 use ReflectionObject;
 use ReflectionProperty;
@@ -68,11 +68,12 @@ class Transmapper
             /** @var Validate|null $annotation */
             $annotation = $this->reader->getPropertyAnnotation($property, Validate::class);
             $propertyName = $property->getName();
+            $propertyInfo = new PropertyInfo($className, $propertyName);
 
             $this->overrideAnnotationAttributes($annotation, $attributePrefix, $propertyName, $overrides);
 
             // Mandatory check
-            $this->checkMandatoryConstraint($annotation, $object, $propertyName, $attributePrefix);
+            $this->checkMandatoryConstraint($annotation, $propertyInfo, $object, $propertyName, $attributePrefix);
 
             if (!array_key_exists($propertyName, get_object_vars($object))) {
                 continue;
@@ -89,7 +90,7 @@ class Transmapper
             }
 
             // Type check
-            $this->checkTypeConstraint($annotation, $value);
+            $this->checkTypeConstraint($annotation, $propertyInfo, $value);
 
             // Regex check
             $this->checkRegexConstraint($annotation, $value);
@@ -98,6 +99,7 @@ class Transmapper
             $this->mapAttribute(
                 $reflectionObject,
                 $annotation,
+                $propertyInfo,
                 $propertyName,
                 $expectedType,
                 $attributePrefix,
@@ -121,7 +123,7 @@ class Transmapper
         string $attributePrefix,
         string $propertyName,
         array $overrides
-    ) {
+    ): void {
         if ($annotation === null) {
             return;
         }
@@ -148,6 +150,7 @@ class Transmapper
 
     /**
      * @param Validate|null $annotation
+     * @param PropertyInfo  $propertyInfo
      * @param stdClass      $object
      * @param string        $propertyName
      * @param string        $attributePrefix
@@ -156,10 +159,11 @@ class Transmapper
      */
     private function checkMandatoryConstraint(
         Validate $annotation = null,
+        PropertyInfo $propertyInfo,
         stdClass $object,
         string $propertyName,
         string $attributePrefix
-    ) {
+    ): void {
         if (
             null !== $annotation
             && !array_key_exists($propertyName, get_object_vars($object))
@@ -170,37 +174,53 @@ class Transmapper
             $missingField = '' !== $attributePrefix ? $attributePrefix.'.'.$propertyName : $propertyName;
 
             throw new $mandatoryExceptionClass(
-                sprintf($annotation->getMandatoryExceptionMessage(), $missingField),
+                sprintf(
+                    '%s: %s',
+                    $propertyInfo,
+                    sprintf($annotation->getMandatoryExceptionMessage(), $missingField)
+                ),
                 $annotation->getMandatoryExceptionCode()
             );
         }
     }
 
     /**
-     * @param Validate    $annotation
-     * @param mixed       $value
-     * @param string|null $forcedExpectedType
-     * @param bool|null   $forceNullable
+     * @param Validate     $annotation
+     * @param PropertyInfo $propertyInfo
+     * @param mixed        $value
+     * @param string|null  $forcedExpectedType
+     * @param bool|null    $forceNullable
+     *
+     * @throws Exception
      */
-    private function checkTypeConstraint(Validate $annotation, $value, $forcedExpectedType = null, $forceNullable = null)
-    {
-        $expectedType = null !== $forcedExpectedType ? $forcedExpectedType : $annotation->getType();
-        $nullable = null !== $forceNullable ? $forceNullable : $annotation->isNullable();
+    private function checkTypeConstraint(
+        Validate $annotation,
+        PropertyInfo $propertyInfo,
+        $value,
+        $forcedExpectedType = null,
+        $forceNullable = null
+    ): void {
+        $expectedType = $forcedExpectedType ?? $annotation->getType();
+        $nullable = $forceNullable ?? $annotation->isNullable();
         $typeExceptionClass = $annotation->getTypeExceptionClass();
 
         $foundType = is_object($value) ? get_class($value) : gettype($value);
 
         $exception = new $typeExceptionClass(
-            sprintf($annotation->getTypeExceptionMessage(), $foundType, $expectedType),
+            sprintf(
+                '%s: %s',
+                $propertyInfo,
+                sprintf($annotation->getTypeExceptionMessage(), $foundType, $expectedType)
+            ),
             $annotation->getTypeExceptionCode()
         );
 
         if (null === $value) {
             if (!$nullable) {
                 throw $exception;
-            } else {
-                return;
             }
+
+            return;
         }
 
         $isArray = $this->isArray($expectedType);
@@ -217,7 +237,9 @@ class Transmapper
                 // Not a scalar value as expected
 
                 throw $exception;
-            } elseif (!is_object($value) && class_exists($expectedType)) {
+            }
+
+            if (!is_object($value) && class_exists($expectedType)) {
                 // Not an object as expected
 
                 throw $exception;
@@ -235,7 +257,7 @@ class Transmapper
      *
      * @throws Exception
      */
-    private function checkRegexConstraint(Validate $annotation, $value)
+    private function checkRegexConstraint(Validate $annotation, $value): void
     {
         $regex = $annotation->getRegex();
 
@@ -257,6 +279,7 @@ class Transmapper
     /**
      * @param ReflectionObject $reflectionObject
      * @param Validate         $annotation
+     * @param PropertyInfo     $propertyInfo
      * @param string           $propertyName
      * @param string           $expectedType
      * @param string           $attributePrefix
@@ -269,13 +292,14 @@ class Transmapper
     private function mapAttribute(
         ReflectionObject $reflectionObject,
         Validate $annotation,
+        PropertyInfo $propertyInfo,
         string $propertyName,
         string $expectedType,
         string $attributePrefix,
         $mappedObject,
         $value,
         array $overrides
-    ) {
+    ): void {
         $property = $reflectionObject->getProperty($propertyName);
         $property->setAccessible(true);
 
@@ -286,19 +310,19 @@ class Transmapper
                     $property,
                     $propertyName,
                     $mappedObject,
-                    $this->mappedScalarArrayAttribute($annotation, $expectedType, $value)
+                    $this->mappedScalarArrayAttribute($annotation, $propertyInfo, $expectedType, $value)
                 );
 
                 return;
-            } else {
-                // Object array
-                $this->setValue(
-                    $property,
-                    $propertyName,
-                    $mappedObject,
-                    $this->mappedObjectArrayAttribute($annotation, $expectedType, $value, $attributePrefix, $overrides)
-                );
             }
+
+            // Object array
+            $this->setValue(
+                $property,
+                $propertyName,
+                $mappedObject,
+                $this->mappedObjectArrayAttribute($annotation, $propertyInfo, $expectedType, $value, $attributePrefix, $overrides)
+            );
         } else {
             // Simple scalar value
             if ($this->isScalar($expectedType)) {
@@ -315,7 +339,7 @@ class Transmapper
         }
     }
 
-    private function setValue(ReflectionProperty $property, string $propertyName, $mappedObject, $value)
+    private function setValue(ReflectionProperty $property, string $propertyName, $mappedObject, $value): void
     {
         if ($mappedObject instanceof MappedModel) {
             if (!$mappedObject->setMapped($propertyName)) {
@@ -327,25 +351,26 @@ class Transmapper
     }
 
     /**
-     * @param Validate $annotation
-     * @param string   $expectedType
-     * @param array    $value
+     * @param Validate     $annotation
+     * @param PropertyInfo $propertyInfo
+     * @param string       $expectedType
+     * @param array        $value
      *
      * @return array
      * @throws Exception
      */
     private function mappedScalarArrayAttribute(
         Validate $annotation,
+        PropertyInfo $propertyInfo,
         string $expectedType,
         array $value
-    ) : array
-    {
+    ) : array {
         $expectedType = preg_replace('/\[\]$/', '', $expectedType);
 
         $values = [];
 
         foreach ($value as $item) {
-            $this->checkTypeConstraint($annotation, $item, $expectedType, false);
+            $this->checkTypeConstraint($annotation, $propertyInfo, $item, $expectedType, false);
 
             $values[] = $item;
         }
@@ -354,17 +379,19 @@ class Transmapper
     }
 
     /**
-     * @param Validate $annotation
-     * @param string   $expectedType
-     * @param array    $value
-     * @param string   $attributePrefix
-     * @param array    $overrides
+     * @param Validate     $annotation
+     * @param PropertyInfo $propertyInfo
+     * @param string       $expectedType
+     * @param array        $value
+     * @param string       $attributePrefix
+     * @param array        $overrides
      *
      * @return array
      * @throws Exception
      */
     private function mappedObjectArrayAttribute(
         Validate $annotation,
+        PropertyInfo $propertyInfo,
         string $expectedType,
         array $value,
         string $attributePrefix,
@@ -376,7 +403,7 @@ class Transmapper
         $values = [];
 
         foreach ($value as $item) {
-            $this->checkTypeConstraint($annotation, $item, $expectedType, false);
+            $this->checkTypeConstraint($annotation, $propertyInfo, $item, $expectedType, false);
 
             $values[] = $this->internalMap($item, $expectedType, $attributePrefix.'.'.$expectedType.'[]', $overrides);
         }

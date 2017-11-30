@@ -3,7 +3,7 @@
 namespace GiacomoFurlan\ObjectTransmapperValidator\Model;
 
 /**
- * Class AbstractMappedModel
+ * Class MappedModel
  * @package GiacomoFurlan\ObjectTransmapperValidator\Model
  */
 class MappedModel

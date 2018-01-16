@@ -231,7 +231,7 @@ class Transmapper
             if (
                 ('string' === $expectedType && !is_string($value))
                 || (in_array($expectedType, ['bool', 'boolean'], true) && !is_bool($value))
-                || (in_array($expectedType, ['float', 'double'], true) && !is_float($value))
+                || (in_array($expectedType, ['float', 'double'], true) && !is_float($value)) && !is_int($value)
                 || (in_array($expectedType, ['int', 'integer'], true) && !is_int($value))
             ) {
                 // Not a scalar value as expected
@@ -326,6 +326,10 @@ class Transmapper
         } else {
             // Simple scalar value
             if ($this->isScalar($expectedType)) {
+                // Fix possible float-to-int conversions (int is still a valid float value)
+                if ($this->isFloat($expectedType)) {
+                    $value = (float) $value;
+                }
                 $this->setValue($property, $propertyName, $mappedObject, $value);
             } else {
                 // Object
@@ -366,13 +370,13 @@ class Transmapper
         array $value
     ) : array {
         $expectedType = preg_replace('/\[\]$/', '', $expectedType);
+        $isFloat = $this->isFloat($expectedType);
 
         $values = [];
-
         foreach ($value as $item) {
             $this->checkTypeConstraint($annotation, $propertyInfo, $item, $expectedType, false);
 
-            $values[] = $item;
+            $values[] = $isFloat ? (float) $item : $item;
         }
 
         return $values;
@@ -419,6 +423,11 @@ class Transmapper
     private function isScalar(string $type) : bool
     {
         return in_array(strtolower($type), ['bool', 'boolean', 'double', 'float', 'int', 'integer', 'string'], true);
+    }
+
+    private function isFloat(string $type) : bool
+    {
+        return $type === 'float';
     }
 
     /**

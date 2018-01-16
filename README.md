@@ -1,6 +1,8 @@
 PHP object trans-mapper validator
 ===
 
+[![codecov](https://codecov.io/gh/elegos/PHP-object-transmapper-validator/branch/master/graph/badge.svg)](https://codecov.io/gh/elegos/PHP-object-transmapper-validator)
+
 This library aims to easily create both data-mappers and validators from the HTTP request down to a model.
 
 Instead of manually validating every single request checking if the variable exists, if the type is correct etc,

@@ -15,4 +15,12 @@ class ClassWithSimpleScalarClassArray
      * @Validate(type="GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass[]", mandatory=true)
      */
     private $innerScalarArray;
+
+    /**
+     * @return SimpleScalarClass[]
+     */
+    public function getInnerScalarArray(): array
+    {
+        return $this->innerScalarArray;
+    }
 }

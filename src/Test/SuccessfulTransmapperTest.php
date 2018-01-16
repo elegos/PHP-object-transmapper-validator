@@ -5,6 +5,7 @@ namespace GiacomoFurlan\ObjectTransmapperValidator\Test;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithFloatArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithInnerMappedModel;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithMappedModel;
@@ -15,6 +16,7 @@ use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithSimpleScala
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithUnmappedAttributes;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass;
 use GiacomoFurlan\ObjectTransmapperValidator\Transmapper;
+use PHPUnit\Framework\TestCase;
 use PHPUnit_Framework_TestCase;
 use stdClass;
 
@@ -22,7 +24,7 @@ use stdClass;
  * Class TransmapperTest
  * @package GiacomoFurlan\ObjectTransmapperValidator\Test
  */
-class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
+class SuccessfulTransmapperTest extends TestCase
 {
     public function setUp()
     {
@@ -43,13 +45,13 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var SimpleScalarClass $mapped */
         $mapped = $transmapper->map($object, SimpleScalarClass::class);
 
-        $this->assertEquals(1, $mapped->getInteger());
-        $this->assertNull($mapped->getInt());
-        $this->assertEquals(true, $mapped->isBoolean());
-        $this->assertNull($mapped->isBool());
-        $this->assertEquals(1.2, $mapped->getFloat());
-        $this->assertNull($mapped->getDouble());
-        $this->assertEquals('whatever', $mapped->getString());
+        static::assertEquals(1, $mapped->getInteger());
+        static::assertNull($mapped->getInt());
+        static::assertEquals(true, $mapped->isBoolean());
+        static::assertNull($mapped->isBool());
+        static::assertEquals(1.2, $mapped->getFloat());
+        static::assertNull($mapped->getDouble());
+        static::assertEquals('whatever', $mapped->getString());
     }
 
     public function testOneLevelUnmappedAttributesMap()
@@ -62,10 +64,10 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var ClassWithUnmappedAttributes $mapped */
         $mapped = $transmapper->map($object, ClassWithUnmappedAttributes::class);
 
-        $this->assertEquals(true, $mapped->isBoolean());
-        $this->assertEquals('Not null', $mapped->getOne());
-        $this->assertNull($mapped->getTwo());
-        $this->assertNull($mapped->getThree());
+        static::assertEquals(true, $mapped->isBoolean());
+        static::assertEquals('Not null', $mapped->getOne());
+        static::assertNull($mapped->getTwo());
+        static::assertNull($mapped->getThree());
     }
 
     public function testMultiLevelWithClassMap()
@@ -81,8 +83,8 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var ClassWithSimpleScalarClassInside $mapped */
         $mapped = $transmapper->map($object, ClassWithSimpleScalarClassInside::class);
 
-        $this->assertNotNull($mapped->getInnerClass());
-        $this->assertEquals(1, $mapped->getInnerClass()->getInteger());
+        static::assertNotNull($mapped->getInnerClass());
+        static::assertEquals(1, $mapped->getInnerClass()->getInteger());
     }
 
     public function testMultiLevelWithScalarArrayMap()
@@ -96,10 +98,10 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var ClassWithIntArray $mapped */
         $mapped = $transmapper->map($object, ClassWithIntArray::class);
 
-        $this->assertEquals(1, $mapped->getIntArray()[0]);
-        $this->assertEquals(2, $mapped->getIntArray()[1]);
-        $this->assertEquals(3, $mapped->getIntArray()[2]);
-        $this->assertEquals(4, $mapped->getIntArray()[3]);
+        static::assertEquals(1, $mapped->getIntArray()[0]);
+        static::assertEquals(2, $mapped->getIntArray()[1]);
+        static::assertEquals(3, $mapped->getIntArray()[2]);
+        static::assertEquals(4, $mapped->getIntArray()[3]);
     }
 
     public function testMultiLevelWithClassArrayMap()
@@ -110,7 +112,10 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
             'innerScalarArray' => [$this->getSimpleScalarModel(), $this->getSimpleScalarModel()]
         ];
 
-        $transmapper->map($object, ClassWithSimpleScalarClassArray::class);
+        /** @var ClassWithSimpleScalarClassArray $result */
+        $result = $transmapper->map($object, ClassWithSimpleScalarClassArray::class);
+
+        static::assertCount(2, $result->getInnerScalarArray());
     }
 
     public function testNullableTypeMap()
@@ -120,12 +125,12 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         ];
         /** @var ClassWithNullableAttribute $mapped */
         $mapped = $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
-        $this->assertEquals(null, $mapped->getNullableInt());
+        static::assertEquals(null, $mapped->getNullableInt());
 
         $object->nullableInt = 23;
         /** @var ClassWithNullableAttribute $mapped */
         $mapped = $this->getTransmapper()->map($object, ClassWithNullableAttribute::class);
-        $this->assertEquals(23, $mapped->getNullableInt());
+        static::assertEquals(23, $mapped->getNullableInt());
     }
 
     public function testRegexConstraintMap()
@@ -137,8 +142,8 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
 
         /** @var ClassWithRegex $mapped */
         $mapped = $this->getTransmapper()->map($object, ClassWithRegex::class);
-        $this->assertEquals('fiveC', $mapped->getString());
-        $this->assertEquals(23, $mapped->getInt());
+        static::assertEquals('fiveC', $mapped->getString());
+        static::assertEquals(23, $mapped->getInt());
     }
 
     public function testMappedModel()
@@ -150,10 +155,10 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         /** @var ClassWithMappedModel $mapped */
         $mapped = $this->getTransmapper()->map($object, ClassWithMappedModel::class);
 
-        $this->assertEquals('whatever', $mapped->getMapped());
-        $this->assertNull($mapped->getNotMapped());
-        $this->assertTrue($mapped->isMapped('mapped'));
-        $this->assertFalse($mapped->isMapped('notMapped'));
+        static::assertEquals('whatever', $mapped->getMapped());
+        static::assertNull($mapped->getNotMapped());
+        static::assertTrue($mapped->isMapped('mapped'));
+        static::assertFalse($mapped->isMapped('notMapped'));
 
         $outer = (object) [
             'inner' => $object,
@@ -164,10 +169,32 @@ class SuccessfulTransmapperTest extends PHPUnit_Framework_TestCase
         $mapped = $this->getTransmapper()->map($outer, ClassWithInnerMappedModel::class);
         $inner = $mapped->getInner();
 
-        $this->assertEquals('whatever', $inner->getMapped());
-        $this->assertNull($inner->getNotMapped());
-        $this->assertTrue($inner->isMapped('mapped'));
-        $this->assertFalse($inner->isMapped('notMapped'));
+        static::assertEquals('whatever', $inner->getMapped());
+        static::assertNull($inner->getNotMapped());
+        static::assertTrue($inner->isMapped('mapped'));
+        static::assertFalse($inner->isMapped('notMapped'));
+    }
+
+    /**
+     * Check for special float case (integers are still valid floats)
+     */
+    public function testFloatValue()
+    {
+        $object = $this->getSimpleScalarModel();
+        $object->float = 1;
+
+        /** @var SimpleScalarClass $mapped */
+        $mapped = $this->getTransmapper()->map($object, SimpleScalarClass::class);
+
+        static::assertEquals(1, $mapped->getFloat());
+
+        $object = (object)[
+            'floatArray' => [1, 1.1, 2],
+        ];
+
+        /** @var ClassWithFloatArray $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithFloatArray::class);
+        static::assertEquals($mapped->getFloatArray(), $object->floatArray);
     }
 
     /**

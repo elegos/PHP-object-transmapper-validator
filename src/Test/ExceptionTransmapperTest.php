@@ -12,13 +12,14 @@ use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\SimpleScalarClass;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\MissingMandatoryAttributeException;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestException\WrongTypeAttributeException;
 use GiacomoFurlan\ObjectTransmapperValidator\Transmapper;
+use PHPUnit\Framework\TestCase;
 use PHPUnit_Framework_TestCase;
 
 /**
  * Class ExceptionTransmapperTest
  * @package GiacomoFurlan\ObjectTransmapperValidator\Test
  */
-class ExceptionTransmapperTest extends PHPUnit_Framework_TestCase
+class ExceptionTransmapperTest extends TestCase
 {
     public function setUp()
     {

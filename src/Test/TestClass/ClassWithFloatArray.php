@@ -1,6 +1,7 @@
 <?php
 
 namespace GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass;
+
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
 
 /**

@@ -58,6 +58,11 @@ class Transmapper
             $attributePrefix = substr($attributePrefix, 1);
         }
 
+        // Special case - blind mapping
+        if ($className === 'stdClass') {
+            return $object;
+        }
+
         $mappedObject = new $className();
 
         $reflectionObject = new ReflectionObject($mappedObject);

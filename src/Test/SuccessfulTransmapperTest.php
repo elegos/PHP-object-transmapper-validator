@@ -5,6 +5,7 @@ namespace GiacomoFurlan\ObjectTransmapperValidator\Test;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use GiacomoFurlan\ObjectTransmapperValidator\Annotation\Validation\Validate;
+use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithArrayOfStdClass;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithFloatArray;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithInnerMappedModel;
 use GiacomoFurlan\ObjectTransmapperValidator\Test\TestClass\ClassWithIntArray;
@@ -36,7 +37,10 @@ class SuccessfulTransmapperTest extends TestCase
         AnnotationRegistry::registerLoader([$loader, "loadClass"]);
     }
 
-    public function testOneLevelScalarMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testOneLevelScalarMap(): void
     {
         $transmapper = $this->getTransmapper();
 
@@ -54,7 +58,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertEquals('whatever', $mapped->getString());
     }
 
-    public function testOneLevelUnmappedAttributesMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testOneLevelUnmappedAttributesMap(): void
     {
         $transmapper = $this->getTransmapper();
 
@@ -70,7 +77,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertNull($mapped->getThree());
     }
 
-    public function testMultiLevelWithClassMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testMultiLevelWithClassMap(): void
     {
         $transmapper = $this->getTransmapper();
 
@@ -87,7 +97,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertEquals(1, $mapped->getInnerClass()->getInteger());
     }
 
-    public function testMultiLevelWithScalarArrayMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testMultiLevelWithScalarArrayMap(): void
     {
         $transmapper = $this->getTransmapper();
 
@@ -104,7 +117,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertEquals(4, $mapped->getIntArray()[3]);
     }
 
-    public function testMultiLevelWithClassArrayMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testMultiLevelWithClassArrayMap(): void
     {
         $transmapper = $this->getTransmapper();
 
@@ -118,7 +134,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertCount(2, $result->getInnerScalarArray());
     }
 
-    public function testNullableTypeMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testNullableTypeMap(): void
     {
         $object = (object) [
             'nullableInt' => null,
@@ -133,7 +152,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertEquals(23, $mapped->getNullableInt());
     }
 
-    public function testRegexConstraintMap()
+    /**
+     * @throws \Throwable
+     */
+    public function testRegexConstraintMap(): void
     {
         $object = (object) [
             'string' => 'fiveC',
@@ -146,7 +168,10 @@ class SuccessfulTransmapperTest extends TestCase
         static::assertEquals(23, $mapped->getInt());
     }
 
-    public function testMappedModel()
+    /**
+     * @throws \Throwable
+     */
+    public function testMappedModel(): void
     {
         $object = (object) [
             'mapped' => 'whatever'
@@ -177,8 +202,9 @@ class SuccessfulTransmapperTest extends TestCase
 
     /**
      * Check for special float case (integers are still valid floats)
+     * @throws \Throwable
      */
-    public function testFloatValue()
+    public function testFloatValue(): void
     {
         $object = $this->getSimpleScalarModel();
         $object->float = 1;
@@ -198,19 +224,53 @@ class SuccessfulTransmapperTest extends TestCase
     }
 
     /**
+     * @throws \Throwable
+     */
+    public function testStdObjectArrayValue(): void
+    {
+        $object = (object)[
+            'arrayOfObjects' => [
+                (object) ['a' => 1,    'b' => 'c', 'd' => null],
+                (object) ['e' => 5,    'f' => 'g', 'h' => null],
+                (object) ['i' => null, 'j' => 'k', 'l' => 92],
+            ]
+        ];
+
+        /** @var ClassWithArrayOfStdClass $mapped */
+        $mapped = $this->getTransmapper()->map($object, ClassWithArrayOfStdClass::class);
+        $array = $mapped->getArrayOfObjects();
+
+        static::assertCount(3, $array);
+
+        static::assertEquals(1, $array[0]->a);
+        static::assertEquals('c', $array[0]->b);
+        static::assertNull($array[0]->d);
+
+        static::assertEquals(5, $array[1]->e);
+        static::assertEquals('g', $array[1]->f);
+        static::assertNull($array[1]->h);
+
+        static::assertNull($array[2]->i);
+        static::assertEquals('k', $array[2]->j);
+        static::assertEquals(92, $array[2]->l);
+    }
+
+    /**
      * @return stdClass
      */
-    private function getSimpleScalarModel() {
+    private function getSimpleScalarModel(): stdClass
+    {
         return (object)[
-            "integer" => 1,
-            "boolean" => true,
-            "float" => 1.2,
-            "string" => 'whatever'
+            'integer' => 1,
+            'boolean' => true,
+            'float' => 1.2,
+            'string' => 'whatever'
         ];
     }
 
     /**
      * @return Transmapper
+     * @throws \Throwable
      */
     private function getTransmapper() : Transmapper
     {
